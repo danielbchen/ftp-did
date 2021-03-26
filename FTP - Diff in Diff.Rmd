@@ -218,3 +218,154 @@ clustered_plm_df %>%
 ```
 
 The standard error of the interaction term increases from 0.01064142 (OLS without clustering) to roughly 0.01999 (clustered by `sampleid`). The standard error increases because clustering addresses time dependence. Observations at different times might not be independent. Because standard OLS doesn't account for this, we will overstate/overestimate the signficance of our results by (falsely) assuming greater precision in our estimates. 
+
+In terms of interpretation, the interaction between `TLyes` and `post_treat` is our coefficient that tells us the average effect of treatment on the treated assuming all of our assumptions hold. In the context of this natural experiment, if an individual believes that their benefits are time-limited and they are in the post-period, this is - on average - associated with a roughly 5% increase in rate of being employed. The p-value is less than .05 suggesting a statistically meaningful difference.
+
+Next, I construct a test for pre-treatment parallel trends. 
+
+```{r Parallel Pre-Treatment Trends Test Setup, include=FALSE, warning=FALSE}
+# Run regression using plm function
+period_specific_effects <- plm(Employed ~ TLyes*Quarter + as.factor(sampleid) + as.factor(Quarter), 
+                               data = merged_data_long, 
+                               index = c("sampleid", "Quarter"), 
+                               model = "within", 
+                               effect = "twoways")
+
+# Cluster the standard errors by sampleid
+clustered_period_specific_effects <- coeftest(period_specific_effects, 
+                                              vcovHC(period_specific_effects, 
+                                                     type = "HC1", 
+                                                     cluster = "group"))
+
+# Store results into a dataframe 
+heterogenous_effects <- tidy(clustered_period_specific_effects, conf.int = TRUE)
+
+# Filter out all the pre-treatment effects and then relabel them correclty, and plot using ggplot
+pre_treat_effects <- c("TLyes:Quarteremppq2",
+                       "TLyes:Quarteremppq3",
+                       "TLyes:Quarteremppq4",
+                       "TLyes:Quarteremppq5",
+                       "TLyes:Quarteremppq6",
+                       "TLyes:Quarteremppq7",
+                       "TLyes:Quarteremppq8",
+                       "TLyes:Quarteremppq9")
+
+pre_treat_estimates <- heterogenous_effects %>%
+  filter(term %in% pre_treat_effects)
+```
+
+```{r Parallel Pre-Treatment Trends Test Output, echo=FALSE, warning=FALSE}
+# Print table showing coefficients in the pre-treatment period
+pre_treat_estimates %>% 
+  kable(caption = "Heterogenous Pre-Treatment Period Specific Effects with Standard Errors Clustered by 'sampleid' using `plm()`",
+        "html") %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+I regressed employment status on the person dummy, the quarter dummy, and the interaction between being treated in each quarter individually via the `plm()` function. Afterwards, I use `coeftest` to correct for standard errors, clustering by sampleid. The table below reports each period specific effect for all quarters in the pre-treatment period. I have dropped `emppq1` from the analysis to serve as a base for comparison. This corresponds to quarter 9, or the period just before treatment takes place since `emppq10` (pre-ra quarter 10) has been dropped for containing `NA` values. 
+
+Next I plot the results. Each dot represents the estimated coefficient of the interaction between `TLyes` and `Quarter` or the estimated effect of being in the treatment group for a specific quarter in the pre-treatment period. The whiskers that extend in both directions from the points represent their respective confidence intervals at the 95% level. The x-axis labels are labeled in such a way where "9" represents quarter 9 - which is the period just before the treatment begins. Moreover, "9" corresponds to the variable `emppq1` or pre-ra quarter 1, which has again been dropped because we need it to serve as our base period in order to avoid multicollinearity. This means that "8" on the x-axis corresponds to the variable `emppq2` or pre-ra quarter 2, "7" would correspond to the variable `emppq3` and so on. As we move to the right on the x-axis, we're moving closer towards the treatment period. 
+
+```{r Question 4a Parallel Pre-Treatment Trends Plot, echo=FALSE, warning=FALSE}
+# Store all of the pre-treatment variables into a vector
+pre_treat_effects <- c("TLyes:Quarteremppq2",
+                       "TLyes:Quarteremppq3",
+                       "TLyes:Quarteremppq4",
+                       "TLyes:Quarteremppq5",
+                       "TLyes:Quarteremppq6",
+                       "TLyes:Quarteremppq7",
+                       "TLyes:Quarteremppq8",
+                       "TLyes:Quarteremppq9")
+
+# Plot the period specific beta estimates
+heterogenous_effects %>%
+  filter(term %in% pre_treat_effects) %>%
+  mutate(period = ifelse(term == "TLyes:Quarteremppq9", 1,
+                                  ifelse(term == "TLyes:Quarteremppq8", 2,
+                                         ifelse(term == "TLyes:Quarteremppq7", 3,
+                                                ifelse(term == "TLyes:Quarteremppq6", 4,
+                                                       ifelse(term == "TLyes:Quarteremppq5", 5,
+                                                              ifelse(term == "TLyes:Quarteremppq4", 6,
+                                                                     ifelse(term == "TLyes:Quarteremppq3", 7,
+                                                                            ifelse(term == "TLyes:Quarteremppq2", 8, "NA"))))))))) %>%
+  mutate(period = as.numeric(period)) %>%
+  arrange(period) %>%
+  ggplot(aes(x = period, y = estimate)) +
+  geom_point() + 
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high)) + 
+  theme_bw() +
+  scale_x_discrete(breaks = c(1:9), labels = c(1:9), limits = c(1:9)) +
+  labs(
+    x = "Pre-Treatment Quarter",
+    y = "Estimated Coefficients",
+    title = "Estimated Heterogenous Effects in Periods Prior to Random Assignment"
+  ) 
+```
+
+
+Note that testing for pre-treatment parallel trends is neither necessary nor sufficient because it is an approximate test that doesn't actually identify the important piece of parallel trends. We really need to observe the untreated outcome in the treatment group in the post-period. Through pre-treatment parallel trends, we *hope* that in the absence of the intervention, the potential untreated outcomes would have trended in a parallel manner in the periods before and after the intervention took place. They key word here is hope, as there is no guarantee that untreated outcomes would be parallel absent the intervention in the post-period.  
+
+Now that I've looked at the period specific pre-treatment trends, I'll do the same for the post-period effects that vary freely over the post-treatment period. 
+
+```{r Post-Treatment Trends Plot, echo=FALSE, warning=FALSE}
+# Create a vector to store all the names of the post treatment interactions
+post_treat_effects <- c("TLyes:Quarterempq1",
+                       "TLyes:Quarterempq2",
+                       "TLyes:Quarterempq3",
+                       "TLyes:Quarterempq4",
+                       "TLyes:Quarterempq5",
+                       "TLyes:Quarterempq6",
+                       "TLyes:Quarterempq7",
+                       "TLyes:Quarterempq8",
+                       "TLyes:Quarterempq9",
+                       "TLyes:Quarterempq10",
+                       "TLyes:Quarterempq11",
+                       "TLyes:Quarterempq12",
+                       "TLyes:Quarterempq13",
+                       "TLyes:Quarterempq14",
+                       "TLyes:Quarterempq15",
+                       "TLyes:Quarterempq16",
+                       "TLyes:Quarterempq17")
+
+# Print out a table showing post-treatment heterogenous effects
+heterogenous_effects %>%
+  filter(term %in% post_treat_effects) %>% 
+  kable(caption = "Heterogenous Post-Treatment Period Specific Effects with Standard Errors Clustered by 'sampleid'",
+        "html") %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+# Create plot
+heterogenous_effects %>%
+  filter(term %in% post_treat_effects) %>%
+  mutate(period = ifelse(term == "TLyes:Quarterempq17", 26,
+                         ifelse(term == "TLyes:Quarterempq16", 25,
+                         ifelse(term == "TLyes:Quarterempq15", 24,
+                         ifelse(term == "TLyes:Quarterempq14", 23,
+                         ifelse(term == "TLyes:Quarterempq13", 22,
+                         ifelse(term == "TLyes:Quarterempq12", 21,
+                         ifelse(term == "TLyes:Quarterempq11", 20,
+                         ifelse(term == "TLyes:Quarterempq10", 19,
+                         ifelse(term == "TLyes:Quarterempq9", 18,
+                         ifelse(term == "TLyes:Quarterempq8", 17,
+                         ifelse(term == "TLyes:Quarterempq7", 16,
+                         ifelse(term == "TLyes:Quarterempq6", 15,
+                         ifelse(term == "TLyes:Quarterempq5", 14,
+                         ifelse(term == "TLyes:Quarterempq4", 13,
+                         ifelse(term == "TLyes:Quarterempq3", 12,
+                         ifelse(term == "TLyes:Quarterempq2", 11,
+                         ifelse(term == "TLyes:Quarterempq1", 10, "NA")))))))))))))))))) %>%
+  mutate(period = as.numeric(period)) %>%
+  arrange(period) %>%
+  ggplot(aes(x = period, y = estimate)) +
+  geom_point() + 
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high)) + 
+  theme_bw() +
+  scale_x_discrete(breaks = c(10:26), labels = c(10:26), limits = c(10:26)) +
+  labs(
+    x = "Post-Treatment Quarter",
+    y = "Estimated Coefficients",
+    title = "Estimated Heterogenous Effects in Periods After Random Assignment"
+  ) 
+```
+
+With the exception of `empq9` ("18" on the x-axis) and `empq10` ("19" on the x-axis) none of the period specific estimates are statistically significant as all the confidence intervals encapsulate 0. However, this does not concern me. The DD estimator is concerned with the signficance of the average effect over the entire sample period. While there appears to be positive heterogenous effects in each post-period, the question is whether or not they are enough to make the average effect in the post-period significant by imposing the constraint that the period specific treatment.
