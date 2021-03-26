@@ -18,24 +18,75 @@ library(plm)
 library(lfe)
 library(estimatr)
 library(stargazer)
+
+setwd(paste("/Users/danielchen/Desktop",
+            "/UChicago/Year Two/Autumn 2020/Program Evaluation/",
+            "Problem Sets/Problem Set 4/", sep=""))
+
+ftp <- read.dta("ftp_ar.dta")
+ftp_srv <- read.dta("ftp_srv.dta")
 ```
 
-## R Markdown
+#### The goal of this project is to analyze the effect of Florida's Family Transition Program on economic outcomes such as employment and welfare receipt. I will use a difference-in-differences approach. For this project, the treatment variable will not be the original assignment variable, but it will instead be whether or not an individual *believed* that their benefits were time limited.
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+#### To start, I need to find the quarterly employment for each of the 10 quarters prior to random assignment along with the 19 quarters that follow it. I do this to determine the longest pre-preiod and post-period sample to be analyzed, as I'll drop quarters containing any missing values. 
 
-```{r cars}
-summary(cars)
+```{r Employment Means Setup, include=FALSE}
+# Select all the pre_ra employment variables from the ftp_ar data only
+employment_vars_pre_ra <- ftp %>%
+  select(matches("emppq"))
+
+# Calculate the means 
+pre_ra_means <- colMeans(employment_vars_pre_ra, na.rm = TRUE)
+
+# Create vector containing the quarter of random assignment 
+exclude <- c("empq1")
+
+# Select all the post_ra employment variables except for the quarter of assignment
+employment_vars_post_ra <- ftp %>%
+  select(starts_with("empq"), -one_of(exclude))
+
+# Add back in the quarter of random assignment so we can check if there are any NA values 
+employment_vars_post_ra_with_ra <- ftp %>%
+  select(starts_with("empq"))
+
+# Calculate means
+post_ra_means <- colMeans(employment_vars_post_ra, na.rm = TRUE)
+
+# Check columns for NA values in the pre_ra variables 
+pre_ra_na_check <- colSums(is.na(employment_vars_pre_ra))
+
+# Check columns for NA values in the post_ra variables
+post_ra_na_check <- colSums(is.na(employment_vars_post_ra_with_ra))
 ```
 
-## Including Plots
+```{r Employment Means Output, echo=FALSE}
+# Print out pre-ra means in a table
+t(pre_ra_means) %>% 
+  kable(caption = "Means for Pre-RA Employment Variables",
+        "html") %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F)
 
-You can also embed plots, for example:
+# Print out post-ra means in a table
+post_ra_means %>% 
+  kable(col.names = c("Mean"), 
+        caption = "Means for Post-RA Employment Variables",
+        "html") %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F)
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+# Print out table showing number of NA values in each pre-ra employment variable
+t(pre_ra_na_check ) %>% 
+  kable(caption = "Num. of NA Values in Pre-RA Employment Variables",
+        "html") %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+# Print out table showing number of NA values in each post-ra employment variable
+post_ra_na_check  %>% 
+  kable(col.names = c("# of NAs"),
+        caption = "Num. of NA Values in Post-RA Employment Variables",
+        "html") %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+From the tables above the longest pre-period that I can analyze is 9 periods from `empqq1` to `emppq9` inclusive. The longest post-period that I can analyze is 17 periods from `empq1` to `empq17` inclusive as none of these contain NA values. `emppq10`, `empq18`, `empq19`, and `empq20` contain NA values.
