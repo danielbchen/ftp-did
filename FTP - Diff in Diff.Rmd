@@ -160,3 +160,61 @@ tidy(ttest) %>%
 
 
 In looking just at the employment rate table, the average employment for the control group prior to treatment (`TLyes` = 0 and `post_treat` = 0) was roughly 19% compared to the treatment group prior to treatment (`TLyes` = 1 and `post_treat` = 0) which was roughly 21%. They appear to be fairly close, but when I regress employment outcomes on `TLyes` restricting the sample only to the pre-treatment period, the p-value for the coefficient on `TLyes` is 0.0172577, suggesting a statistically significant difference between the employment rate in the pre-random assignment period between those who believe in the time limit and those who do not. I also ran Welch's Two Sample t-test explicitly and the test also confirms a meaningful difference in means with a p-value of .0161 and t-stat of -2.4072.
+
+Next I run a difference-in-differences regression where the dependent variable is employment status, and the explanatory variables are the person dummies, quarter dummies, and an interaction between `TLyes` and a post-treatment dummy. I ignore the quarters containing NA values that I identified earlier. 
+
+```{r OLS DiD Setup, include=FALSE}
+# Store the names of the variables containing NA values into its own object 
+na_cols <- c("emppq10", "empq18", "empq19", "empq20")
+
+# Store the long dataframe into its own object and filter out the variables that contain NA values 
+merged_data_long <- merged_data %>% 
+  select(vars) %>% # Subset data to only include variables of interest 
+  gather(Quarter, Employed, -sampleid, -TLyes) %>% # Reshapes data from wide to long
+  mutate(post_treatment = case_when(Quarter %in% names(employment_vars_pre_ra) ~ 0, # Create post_treatment dummy indicator
+                                    Quarter %in% names(employment_vars_post_ra) | Quarter == 'empq1' ~ 1)) %>%
+  filter(!Quarter %in% na_cols)
+
+# Run regression
+ols <- lm(Employed ~ as.factor(sampleid) + as.factor(Quarter) + TLyes*post_treatment, data =  merged_data_long)
+#model <- plm(Employed ~ sampleid + Quarter + TLyes*post_treatment, data = merged_data_long, index = c("sampleid", "Quarter"), model = "within")
+#summary(model)
+
+# Filter to only show the interaction term 
+ols_output <- tidy(ols) %>%
+  filter(term == "TLyes:post_treatment")
+```
+
+```{r Question 3a OLS DiD Output, echo=FALSE}
+ols_output %>% 
+  kable(caption = "Diff-in-Diff OLS Model",
+        "html") %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+I run the same regression this time clustering the standard errores by `sampleid` because autocorrelation tends to be a problem for panel studies. While R provides multiple libraries to work with panel models, for this project I use the `plm` library. 
+
+```{r Clustered OLS DiD Setup, include=FALSE, message=FALSE}
+# Create the interaction term as its own variable 
+merged_data_long$TLyes_post_treatment <- merged_data_long$TLyes * merged_data_long$post_treatment
+
+# Run model using plm function and coeftest to get correct standard errors
+clustered_plm <- plm(Employed ~ sampleid + Quarter + TLyes*post_treatment, 
+                     data = merged_data_long, 
+                     index = c("sampleid", "Quarter"), 
+                     model = "within")
+clustered_plm_output <- coeftest(clustered_plm, vcovHC(clustered_plm, type = "HC1", cluster = "group"))
+
+clustered_plm_df <- tidy(clustered_plm_output) %>% 
+  filter(term == "TLyes:post_treatment")
+```
+
+```{r Clustered OLS DiD Output, echo=FALSE}
+# Print clustered output as a table
+clustered_plm_df %>% 
+  kable(caption = "Diff-in-Diff Clustered by sampleid Using plm()",
+        "html") %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+The standard error of the interaction term increases from 0.01064142 (OLS without clustering) to roughly 0.01999 (clustered by `sampleid`). The standard error increases because clustering addresses time dependence. Observations at different times might not be independent. Because standard OLS doesn't account for this, we will overstate/overestimate the signficance of our results by (falsely) assuming greater precision in our estimates. 

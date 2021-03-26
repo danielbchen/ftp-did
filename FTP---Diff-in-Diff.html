@@ -1334,6 +1334,94 @@ two.sided
 </tbody>
 </table>
 <p>In looking just at the employment rate table, the average employment for the control group prior to treatment (<code>TLyes</code> = 0 and <code>post_treat</code> = 0) was roughly 19% compared to the treatment group prior to treatment (<code>TLyes</code> = 1 and <code>post_treat</code> = 0) which was roughly 21%. They appear to be fairly close, but when I regress employment outcomes on <code>TLyes</code> restricting the sample only to the pre-treatment period, the p-value for the coefficient on <code>TLyes</code> is 0.0172577, suggesting a statistically significant difference between the employment rate in the pre-random assignment period between those who believe in the time limit and those who do not. I also ran Welch’s Two Sample t-test explicitly and the test also confirms a meaningful difference in means with a p-value of .0161 and t-stat of -2.4072.</p>
+<p>Next I run a difference-in-differences regression where the dependent variable is employment status, and the explanatory variables are the person dummies, quarter dummies, and an interaction between <code>TLyes</code> and a post-treatment dummy. I ignore the quarters containing NA values that I identified earlier.</p>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<caption>
+Diff-in-Diff OLS Model
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;">
+term
+</th>
+<th style="text-align:right;">
+estimate
+</th>
+<th style="text-align:right;">
+std.error
+</th>
+<th style="text-align:right;">
+statistic
+</th>
+<th style="text-align:right;">
+p.value
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+TLyes:post_treatment
+</td>
+<td style="text-align:right;">
+0.0500453
+</td>
+<td style="text-align:right;">
+0.0106414
+</td>
+<td style="text-align:right;">
+4.702879
+</td>
+<td style="text-align:right;">
+2.6e-06
+</td>
+</tr>
+</tbody>
+</table>
+<p>I run the same regression this time clustering the standard errores by <code>sampleid</code> because autocorrelation tends to be a problem for panel studies. While R provides multiple libraries to work with panel models, for this project I use the <code>plm</code> library.</p>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<caption>
+Diff-in-Diff Clustered by sampleid Using plm()
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;">
+term
+</th>
+<th style="text-align:right;">
+estimate
+</th>
+<th style="text-align:right;">
+std.error
+</th>
+<th style="text-align:right;">
+statistic
+</th>
+<th style="text-align:right;">
+p.value
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+TLyes:post_treatment
+</td>
+<td style="text-align:right;">
+0.0500453
+</td>
+<td style="text-align:right;">
+0.0199897
+</td>
+<td style="text-align:right;">
+2.503553
+</td>
+<td style="text-align:right;">
+0.0123015
+</td>
+</tr>
+</tbody>
+</table>
 </div>
 
 
