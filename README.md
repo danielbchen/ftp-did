@@ -1,2 +1,1 @@
-# ftp-did
-A difference-in-differences analysis of Florida's Family Transition Program. 
+# A Difference-in-Differences Analysis of Florida's Family Transition Program
