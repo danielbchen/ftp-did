@@ -30,7 +30,7 @@ ftp_srv <- read.dta("ftp_srv.dta")
 #### The goal of this project is to analyze the effect of Florida's Family Transition Program on economic outcomes such as employment and welfare receipt. I will use a difference-in-differences approach. For this project, the treatment variable will not be the original assignment variable, but it will instead be whether or not an individual *believed* that their benefits were time limited.
 
 
-#### To start, I need to find the quarterly employment for each of the 10 quarters prior to random assignment along with the 19 quarters that follow it. I do this to determine the longest pre-preiod and post-period sample to be analyzed, as I'll drop quarters containing any missing values. 
+To start, I need to find the quarterly employment for each of the 10 quarters prior to random assignment along with the 19 quarters that follow it. I do this to determine the longest pre-preiod and post-period sample to be analyzed, as I'll drop quarters containing any missing values. 
 
 ```{r Employment Means Setup, include=FALSE}
 # Select all the pre_ra employment variables from the ftp_ar data only
@@ -90,3 +90,73 @@ post_ra_na_check  %>%
 ```
 
 From the tables above the longest pre-period that I can analyze is 9 periods from `empqq1` to `emppq9` inclusive. The longest post-period that I can analyze is 17 periods from `empq1` to `empq17` inclusive as none of these contain NA values. `emppq10`, `empq18`, `empq19`, and `empq20` contain NA values.
+
+Next I reshape our data from wide to long and calculate the mean employment rate by treatment status before and after treatment. I consider the period of random assignment itself to be in the after period. 
+
+```{r Means by Treatment Status Before and After Treatment Setup, include=FALSE}
+# Merge the two datasets 
+merged_data <- ftp %>%
+  inner_join(ftp_srv, by="sampleid") %>%
+  rename_at(vars(ends_with(".x")), funs(str_replace(., "\\..$",""))) %>%
+  select(-ends_with(".y"))
+
+# Create the TLyes treatment indicator dummy
+merged_data <- merged_data %>%
+  filter(!is.na(fmi2)) %>%
+  filter(fmi2 != 8) %>%
+  mutate(TLyes = ifelse(fmi2 == 1, 1, 0))
+
+# Create a vector containing the names of variables needed to reshape the data 
+vars <- c("sampleid",
+          "TLyes",
+          names(employment_vars_pre_ra), 
+          "empq1", # Add back in the quarter of RA
+          names(employment_vars_post_ra)) # Remove cols with NA
+
+# Calculate employment rates by treatment status before and after treatment.
+employment_rate_matrix <- merged_data %>% 
+  select(vars) %>% # Subset data to only include variables of interest 
+  gather(Quarter, Employed, -sampleid, -TLyes) %>% # Reshapes data from wide to long
+  mutate(post_treatment = case_when(Quarter %in% names(employment_vars_pre_ra) ~ 0, # Create post_treatment dummy indicator
+                                    Quarter %in% names(employment_vars_post_ra) | Quarter == 'empq1' ~ 1)) %>% 
+  group_by(TLyes, post_treatment) %>%
+  summarize(Employment_Rate = mean(Employed, na.rm = TRUE)) # Calculate employment matrix
+
+# Regress Employment Outcomes on the treatment variable only in the pre-treatment period
+employment_rate_test <- merged_data %>% 
+  select(vars) %>% # Subset data to only include variables of interest 
+  gather(Quarter, Employed, -sampleid, -TLyes) %>% # Reshapes data from wide to long
+  mutate(post_treatment = case_when(Quarter %in% names(employment_vars_pre_ra) ~ 0, # Create post_treatment dummy indicator
+                                    Quarter %in% names(employment_vars_post_ra) | Quarter == 'empq1' ~ 1)) %>%
+  filter(post_treatment == 0) %>%
+  lm(Employed ~ TLyes, data =.)
+
+# T-Test for difference in means 
+ttest <- merged_data %>% 
+  select(vars) %>% # Subset data to only include variables of interest 
+  gather(Quarter, Employed, -sampleid, -TLyes) %>% # Reshapes data from wide to long
+  mutate(post_treatment = case_when(Quarter %in% names(employment_vars_pre_ra) ~ 0, # Create post_treatment dummy indicator
+                                    Quarter %in% names(employment_vars_post_ra) | Quarter == 'empq1' ~ 1)) %>%
+  filter(post_treatment == 0) %>%
+  t.test(Employed ~ TLyes, data = .)
+```
+
+```{r Employment Rate Matrix and t-Test Output, echo=FALSE}
+employment_rate_matrix %>% 
+  kable(caption = "Employment Rate by Treatment Group and Period",
+        'html') %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+tidy(employment_rate_test) %>%
+  kable(caption = "Employment Rate Explained by Treatment Status in pre-ra Period",
+        'html') %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+tidy(ttest) %>%
+  kable(caption = "Welch's Two Sample t-test Comparing Employment Rate in by Treatment Status in pre-ra Period",
+        'html') %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+
+In looking just at the employment rate table, the average employment for the control group prior to treatment (`TLyes` = 0 and `post_treat` = 0) was roughly 19% compared to the treatment group prior to treatment (`TLyes` = 1 and `post_treat` = 0) which was roughly 21%. They appear to be fairly close, but when I regress employment outcomes on `TLyes` restricting the sample only to the pre-treatment period, the p-value for the coefficient on `TLyes` is 0.0172577, suggesting a statistically significant difference between the employment rate in the pre-random assignment period between those who believe in the time limit and those who do not. I also ran Welch's Two Sample t-test explicitly and the test also confirms a meaningful difference in means with a p-value of .0161 and t-stat of -2.4072.

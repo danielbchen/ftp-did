@@ -643,9 +643,7 @@ summary {
 
 <div id="the-goal-of-this-project-is-to-analyze-the-effect-of-floridas-family-transition-program-on-economic-outcomes-such-as-employment-and-welfare-receipt.-i-will-use-a-difference-in-differences-approach.-for-this-project-the-treatment-variable-will-not-be-the-original-assignment-variable-but-it-will-instead-be-whether-or-not-an-individual-believed-that-their-benefits-were-time-limited." class="section level4">
 <h4>The goal of this project is to analyze the effect of Florida’s Family Transition Program on economic outcomes such as employment and welfare receipt. I will use a difference-in-differences approach. For this project, the treatment variable will not be the original assignment variable, but it will instead be whether or not an individual <em>believed</em> that their benefits were time limited.</h4>
-</div>
-<div id="to-start-i-need-to-find-the-quarterly-employment-for-each-of-the-10-quarters-prior-to-random-assignment-along-with-the-19-quarters-that-follow-it.-i-do-this-to-determine-the-longest-pre-preiod-and-post-period-sample-to-be-analyzed-as-ill-drop-quarters-containing-any-missing-values." class="section level4">
-<h4>To start, I need to find the quarterly employment for each of the 10 quarters prior to random assignment along with the 19 quarters that follow it. I do this to determine the longest pre-preiod and post-period sample to be analyzed, as I’ll drop quarters containing any missing values.</h4>
+<p>To start, I need to find the quarterly employment for each of the 10 quarters prior to random assignment along with the 19 quarters that follow it. I do this to determine the longest pre-preiod and post-period sample to be analyzed, as I’ll drop quarters containing any missing values.</p>
 <table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <caption>
 Means for Pre-RA Employment Variables
@@ -1136,6 +1134,206 @@ empq20
 </tr>
 </tbody>
 </table>
+<p>From the tables above the longest pre-period that I can analyze is 9 periods from <code>empqq1</code> to <code>emppq9</code> inclusive. The longest post-period that I can analyze is 17 periods from <code>empq1</code> to <code>empq17</code> inclusive as none of these contain NA values. <code>emppq10</code>, <code>empq18</code>, <code>empq19</code>, and <code>empq20</code> contain NA values.</p>
+<p>Next I reshape our data from wide to long and calculate the mean employment rate by treatment status before and after treatment. I consider the period of random assignment itself to be in the after period.</p>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<caption>
+Employment Rate by Treatment Group and Period
+</caption>
+<thead>
+<tr>
+<th style="text-align:right;">
+TLyes
+</th>
+<th style="text-align:right;">
+post_treatment
+</th>
+<th style="text-align:right;">
+Employment_Rate
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0.1917808
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0.4299208
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0.2115616
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0.4922737
+</td>
+</tr>
+</tbody>
+</table>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<caption>
+Employment Rate Explained by Treatment Status in pre-ra Period
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;">
+term
+</th>
+<th style="text-align:right;">
+estimate
+</th>
+<th style="text-align:right;">
+std.error
+</th>
+<th style="text-align:right;">
+statistic
+</th>
+<th style="text-align:right;">
+p.value
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+(Intercept)
+</td>
+<td style="text-align:right;">
+0.1917808
+</td>
+<td style="text-align:right;">
+0.0066756
+</td>
+<td style="text-align:right;">
+28.728695
+</td>
+<td style="text-align:right;">
+0.0000000
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+TLyes
+</td>
+<td style="text-align:right;">
+0.0197807
+</td>
+<td style="text-align:right;">
+0.0083058
+</td>
+<td style="text-align:right;">
+2.381557
+</td>
+<td style="text-align:right;">
+0.0172577
+</td>
+</tr>
+</tbody>
+</table>
+<table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<caption>
+Welch’s Two Sample t-test Comparing Employment Rate in by Treatment Status in pre-ra Period
+</caption>
+<thead>
+<tr>
+<th style="text-align:right;">
+estimate
+</th>
+<th style="text-align:right;">
+estimate1
+</th>
+<th style="text-align:right;">
+estimate2
+</th>
+<th style="text-align:right;">
+statistic
+</th>
+<th style="text-align:right;">
+p.value
+</th>
+<th style="text-align:right;">
+parameter
+</th>
+<th style="text-align:right;">
+conf.low
+</th>
+<th style="text-align:right;">
+conf.high
+</th>
+<th style="text-align:left;">
+method
+</th>
+<th style="text-align:left;">
+alternative
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+-0.0197807
+</td>
+<td style="text-align:right;">
+0.1917808
+</td>
+<td style="text-align:right;">
+0.2115616
+</td>
+<td style="text-align:right;">
+-2.407155
+</td>
+<td style="text-align:right;">
+0.0161006
+</td>
+<td style="text-align:right;">
+7745.605
+</td>
+<td style="text-align:right;">
+-0.0358892
+</td>
+<td style="text-align:right;">
+-0.0036723
+</td>
+<td style="text-align:left;">
+Welch Two Sample t-test
+</td>
+<td style="text-align:left;">
+two.sided
+</td>
+</tr>
+</tbody>
+</table>
+<p>In looking just at the employment rate table, the average employment for the control group prior to treatment (<code>TLyes</code> = 0 and <code>post_treat</code> = 0) was roughly 19% compared to the treatment group prior to treatment (<code>TLyes</code> = 1 and <code>post_treat</code> = 0) which was roughly 21%. They appear to be fairly close, but when I regress employment outcomes on <code>TLyes</code> restricting the sample only to the pre-treatment period, the p-value for the coefficient on <code>TLyes</code> is 0.0172577, suggesting a statistically significant difference between the employment rate in the pre-random assignment period between those who believe in the time limit and those who do not. I also ran Welch’s Two Sample t-test explicitly and the test also confirms a meaningful difference in means with a p-value of .0161 and t-stat of -2.4072.</p>
 </div>
 
 
