@@ -17,12 +17,12 @@ survey <- read.dta(paste("/Users/danielchen/Desktop/UChicago/Year Two/Autumn 202
 admin %>%
   select(1:11) %>%
   head(10) %>%
-  kable("latex")
+  write_csv("admin_preview.csv")
 
 survey %>%
   select(1:10) %>%
   head(10) %>%
-  kable("latex")
+  write_csv("survey_preview.csv")
 
 # Create function that uses a loop to create a vector containing the names of 
 # the employment variables we're interested in
@@ -65,7 +65,7 @@ ftp <- merge(admin, survey, by = "sampleid") %>%
 # Preview new dataframe
 ftp %>%
   head(5) %>%
-  kable("latex")
+  write_csv("reshaped_preview.csv")
 
 # Calculate number of NA values
 admin %>%
@@ -76,14 +76,14 @@ admin %>%
   as.data.frame() %>%
   rownames_to_column(var = "variable") %>%
   rename(`NA count` = V1) %>% # Using spaces in variable names for presentation
-  kable("pipe")
+  write_csv("na_counts.csv")
 
 # Calculate employment rates by group
 ftp %>%
   group_by(TLyes, post_treat) %>%
   summarise(`Employment Rate` = mean(employed, na.rm = TRUE), .groups = "drop") %>%
   ungroup() %>%
-  kable("pipe")
+  write_csv("employment_rates_grouped.csv")
 
 # Regress employment explained by belief in the time limit
 ftp %>%
@@ -91,7 +91,7 @@ ftp %>%
   filter(is.na(employed) == FALSE) %>%
   lm(employed ~ TLyes, data = .) %>%
   tidy() %>%
-  kable("pipe")
+  write_csv("employment_tl_ols.csv")
 
 # Store vector containing coefficients of interest
 pre_treat_estimates <- c("quarteremppq2:TLyes",
@@ -122,7 +122,7 @@ pre_treat_results <- coeftest(
 
 # View results
 pre_treat_results %>%
-  kable("pipe")
+  write_csv("pre_treat_estimates.csv")
 
 pre_treat_results %>%
   mutate(
@@ -155,7 +155,7 @@ ftp %>%
   lm(employed ~ sampleid + quarter + TLyes*post_treat, data = .) %>%
   tidy() %>%
   filter(str_sub(term, 1, 6) == "TLyes:") %>%
-  kable("pipe")
+  write_csv("did_output_unclustered.csv")
 
 # Run DiD using plm() function and store output to object
 clustered_plm <- plm(
@@ -172,7 +172,7 @@ coeftest(
 ) %>%
   tidy() %>%
   filter(term == "TLyes:post_treat") %>%
-  kable("pipe")
+  write_csv("did_output_clustered.csv")
 
 # Run for loop to store a vector containing the names of our coefficients of interest
 post_treat_estimates <- c()
