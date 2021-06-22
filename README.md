@@ -1,11 +1,11 @@
-## A Difference-in-Differences Analysis of Florida's Family Transition Program
+# A Difference-in-Differences Analysis of Florida's Family Transition Program
 
 
-# Project Overview
+## Project Overview
 
 The goal of this project is to analyze the effect of Florida's Family Transition Program on outcomes such as employment and welfare receipt through a difference-in-differences approach. The treatment variable will not be the original assignment variable, `e`, but instead, I will derive a variable indicating whether or not an individual *believed* that their benefits were time limited.
 
-# Understanding the Data
+## Understanding the Data
 
 Before we continue with the diff-in-diff analysis, we may wonder if there is a difference in employment rates between the treatment and control group prior to the period of random assignment? Let's start by checking out the data.
 
@@ -68,7 +68,7 @@ survey %>%
 
 We can see above that the data is currently wide. We'll need to merge the admin and survey data, and then reshape it from wide to long in order to analyze it as a time series. We'll also need to create a new treatment dummy variable because we're interested in the effect of believing in the time limit on employment outcomes - not assignment to treatment or control itself. 
 
-# Reshaping the Data
+## Reshaping the Data
 
 Because there's a number of variables we're interested in, I'll write a loop to return the names of the variables we're interested in instead of typing them out individually. All the employment variables start with either "empq" or "emppq". Note that variables that start with the prefix "emppq" denote time periods prior to random assignment and variables that start with "empq" denote periods after random assignment. 
 
@@ -136,7 +136,7 @@ ftp %>%
 | 1007     | 1     | emppq5  | 1        | 0          |
 
 
-# Determining the Period of Analysis
+## Determining the Period of Analysis
 
 Even though our data is in the wide format, we need to check if there are any missing values. If any quarters contain NA values, we cannot use a difference-in-differences approach. If any quarters contain missing observations, we'll drop them from the analysis. For ease, we'll return to the wide format admin data.
 
@@ -188,7 +188,7 @@ admin %>%
 
 We'll need to drop `emppq10`, `empq18`, `empq19`, and `empq20` because they contain missing observations. 
 
-# Do Employment Rates Differ Based on Belief in the Time Limit?
+## Do Employment Rates Differ Based on Belief in the Time Limit?
 
 We may be curious to see if employment rates differed based on whether or not an individual believed in the time limit or not. 
 
@@ -225,7 +225,7 @@ ftp %>%
 
 From the table above, we can see that the t-statistic on the variable `TLyes` is larger than two suggesting a statistically significant difference in employment rates between those who believed in the time limit and those who did not. 
 
-# Checking the for Pre-Treatment Parallel Trends
+## Checking the for Pre-Treatment Parallel Trends
 
 Before continuing with the DiD approach, we need to check for pre-treatment parallel trends. By testing to see if the treatment and control groups have parallel trends in the pre-treatment period, we can then attribute any differences in post period outcomes to the treatment itself as the treatment is the only change introduced after random assignment. 
 
@@ -309,9 +309,9 @@ From the plot above, each point represents the estimate and the whiskers represe
 ##### Note on parallel trends assumption:
 Testing for pre-treatment parallel trends is neither necessary nor sufficient because it is an approximate test that doesn't actually identify the important component of parallel trends. We really need to observe the untreated outcome in the treatment group in the post-period. Through pre-treatment parallel trends, we *hope* that in the absence of the intervention, the potential untreated outcomes would have trended in a parallel manner in the periods before and after the intervention took place. The key word here is hope, as there is no guarantee that untreated outcomes would be parallel absent the intervention in the post-period. 
 
-# Difference-in-Differences Analysis
+## Difference-in-Differences Analysis
 
-## Homogenous Treatment Effects in the Post-Period
+### Homogenous Treatment Effects in the Post-Period
 For part one of the diff-in-diff, we'll assume homogenous treatment effects in the post-treatment period. However, effects may vary by period throughout the post-treatment period. We'll take a look at the heterogenous effects in part two. 
 
 We can now continue with the diff-in-diff approach. On the right side we want the individual dummies, the quarter dummies, and the interaction between belief in the time limit (`TLyes`) and period of analysis (`post_treat`). We need this interaction because we're interested in the effect after the period of random assignment when an individual believes in the time limit. In the pre-treatment period, the `post_treat` variable is equal to zero, canceling out any effects.
@@ -357,7 +357,7 @@ As we can see from the output above, the estimate remains the same at roughly 0.
 
 In terms of interpretation, the interaction between `TLyes` and `post_treat` tells us the average effect of treatment on the treated assuming our assumptions hold (as we saw above, the pre-treatment parallel trends assumption was met). If an individual believes that their benefits are time-limited, and they are in the post-treatment period, this is -- on average -- associated with a roughly 5% increase in the rate of being employed. Statistically, this difference is meaningful as the p-value is less than our 0.05 threshold. 
 
-## Heterogenous Treatment Effects in the Post-Period
+### Heterogenous Treatment Effects in the Post-Period
 Now we'll let treatment effects vary in the post-treatment period. We'll plot the point estimates in each quarter of the post-period similar to what we did when we tested for pre-treatment parallel trends. 
 
 ```r
