@@ -2,7 +2,9 @@
 title: "Florida's Family Transition Program - A Difference-in-Differences Analysis"
 author: "Daniel Chen"
 date: "3/26/2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
