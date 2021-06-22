@@ -29,7 +29,7 @@ survey <- read.dta(paste("/Users/danielchen/Desktop/UChicago/Year Two/Autumn 202
 # View snippet of data
 admin %>%
   select(1:11) %>%
-  head(10) %>%
+  head(10) %>%z
   kable("latex")
 ```
 
@@ -302,7 +302,7 @@ pre_treat_results %>%
   ) 
 ```
 
-![image](https://github.com/danielbchen/ftp-did/blob/main/Plots/Parallel%20Pre-Treatment%20Trends%20Plot.pdf)
+![png](https://github.com/danielbchen/ftp-did/blob/main/Plots/Parallel%20Pre-Treatment%20Trends%20Plot.png)
 
 From the plot above, each point represents the estimate and the whiskers represent the 95% confidence intervals. As we move from left to right on the on the x-axis, we're moving closer towards the period of random assignment. As we can see, all of the 95% confidence intervals encompass zero, so none of the estimates are statistically significant. In other words, the parallel trends assumption is met. There is no statistical difference in employment rates between the treatment and control groups in the pre-treatment period. This should be the case because an intervention has not yet took place.
 
@@ -413,6 +413,6 @@ post_treat_results %>%
   ) 
 ```
 
-![image](https://github.com/danielbchen/ftp-did/blob/main/Plots/Post-Treatment%20Effects%20Plot.pdf)
+![png](https://github.com/danielbchen/ftp-did/blob/main/Plots/Post-Treatment%20Effects%20Plot.png)
 
 With the exception of `empq9` ("18" on the x-axis) and `empq10` ("19" on the x-axis) none of the period specific estimates are statistically significant as all of the confidence intervals encapsulate zero. However, this does not concern me. The DiD estimator is concerned with the significance of the average effect of the entire sample period. While there appears to be positive heterogeneous effects in each post-period, the question is whether or not they are enough to make the average effect in the post-period significant by imposing the constraint of heterogeneous effects even when there are more than two time periods. 
