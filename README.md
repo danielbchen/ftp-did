@@ -379,28 +379,7 @@ post_treat_results <- coeftest(
 
 # Plot estimates
 post_treat_results %>%
-  mutate(
-    period = case_when(
-      term == "quarterempq1:TLyes"  ~ 10,
-      term == "quarterempq2:TLyes"  ~ 11,
-      term == "quarterempq3:TLyes"  ~ 12,
-      term == "quarterempq4:TLyes"  ~ 13,
-      term == "quarterempq5:TLyes"  ~ 14,
-      term == "quarterempq6:TLyes"  ~ 15,
-      term == "quarterempq7:TLyes"  ~ 16,
-      term == "quarterempq8:TLyes"  ~ 17,
-      term == "quarterempq9:TLyes"  ~ 18,
-      term == "quarterempq10:TLyes" ~ 19,
-      term == "quarterempq11:TLyes" ~ 20,
-      term == "quarterempq12:TLyes" ~ 21,
-      term == "quarterempq13:TLyes" ~ 22,
-      term == "quarterempq14:TLyes" ~ 23,
-      term == "quarterempq15:TLyes" ~ 24,
-      term == "quarterempq16:TLyes" ~ 25,
-      term == "quarterempq17:TLyes" ~ 26,
-    )
-  ) %>%
-  mutate(period = as.numeric(period)) %>%
+  mutate(period = as.numeric(str_extract(string = term, pattern = '\\d+')) + 9) %>%
   ggplot(aes(x = period, y = estimate)) +
   geom_point() + 
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high)) + 
